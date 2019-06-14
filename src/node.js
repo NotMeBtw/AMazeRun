@@ -3,5 +3,6 @@ export default class Node {
         this.x = x;
         this.y = y;
         this.visited = visited;
+        this.parent = null;
     }
 };
