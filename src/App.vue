@@ -6,6 +6,7 @@
 
 <script>
 import Node from "./node";
+import Player from "./player";
 
 export default {
   name: "app",
@@ -16,6 +17,7 @@ export default {
       mazeSize: 10,
       nodeSize: null,
       maze: null,
+      player: null,
       directions: {
         LEFT: 0b0001,
         RIGHT: 0b0010,
@@ -30,15 +32,16 @@ export default {
 
     this.nodeSize = 500 / this.mazeSize;
 
-    this.init();
+    this.initNodes();
     this.draw();
     this.ctx.lineWidth = 3;
     this.ctx.strokeStyle = "#fff";
     this.ctx.beginPath();
-    this.visit(0, 0);
+    this.dfs(0, 0);
+    this.initPlayer();
   },
   methods: {
-    init() {
+    initNodes() {
       this.maze = [];
       for (let y = 0; y < this.mazeSize; y++) {
         this.maze[y] = [];
@@ -58,7 +61,7 @@ export default {
         this.ctx.stroke();
       }
     },
-    visit(x, y, parent) {
+    dfs(x, y, parent) {
       let node = this.maze[y][x];
       console.log(node);
 
@@ -77,16 +80,16 @@ export default {
         console.log(direction);
         if (!direction) break;
         if (direction == this.directions.LEFT) {
-          this.visit(x - 1, y, node);
+          this.dfs(x - 1, y, node);
         }
         if (direction == this.directions.RIGHT) {
-          this.visit(x + 1, y, node);
+          this.dfs(x + 1, y, node);
         }
         if (direction == this.directions.UP) {
-          this.visit(x, y - 1, node);
+          this.dfs(x, y - 1, node);
         }
         if (direction == this.directions.DOWN) {
-          this.visit(x, y + 1, node);
+          this.dfs(x, y + 1, node);
         }
         visitedDirs.push(direction);
       }
@@ -164,6 +167,33 @@ export default {
 
       const r = Math.floor(Math.random() * leftDirs.length);
       return leftDirs[r];
+    },
+    initPlayer() {
+      const color = this.getRandomColor();
+      this.player = new Player(0, 0, this.nodeSize, color, this.ctx);
+      window.addEventListener("keydown", e => {
+        let key = e.keyCode;
+        if (key == 37) {
+          if (this.player.x !== 0) this.player.goLeft();
+        }
+        if (key == 39) {
+          if (this.player.x !== this.mazeSize - 1) this.player.goRight();
+        }
+        if (key == 38) {
+          if (this.player.y !== 0) this.player.goUp();
+        }
+        if (key == 40) {
+          if (this.player.y !== this.mazeSize - 1) this.player.goDown();
+        }
+      });
+    },
+    getRandomColor() {
+      const letters = "0123456789ABCDEF";
+      let color = "#";
+      for (let i = 0; i < 6; i++) {
+        color += letters[Math.floor(Math.random() * 16)];
+      }
+      return color;
     }
   }
 };
