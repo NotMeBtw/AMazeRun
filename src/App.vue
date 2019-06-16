@@ -34,9 +34,10 @@ export default {
 
     this.initNodes();
     this.draw();
-    this.ctx.lineWidth = 3;
+    this.ctx.lineWidth = 2;
     this.ctx.strokeStyle = "#fff";
     this.ctx.beginPath();
+    this.ctx.lineWidth = 4;
     this.dfs(0, 0);
     this.initPlayer();
   },
@@ -62,7 +63,7 @@ export default {
       }
     },
     dfs(x, y, parent) {
-      let node = this.maze[y][x];
+      const node = this.maze[y][x];
       console.log(node);
 
       if (node.visited) return false;
@@ -97,11 +98,21 @@ export default {
     },
     breakWall(node) {
       const parent = node.parent;
-      const { point0, point1 } = this.getWallToBreak(node, parent);
-      console.log({ point0, point1 });
+      const { point0, point1, direction } = this.getWallToBreak(node, parent);
+      const invertedDirection =
+        direction === this.directions.UP
+          ? this.directions.DOWN
+          : direction === this.directions.DOWN
+          ? this.directions.UP
+          : direction === this.directions.LEFT
+          ? this.directions.RIGHT
+          : this.directions.LEFT;
 
-      this.ctx.moveTo(point0.x, point0.y);
-      this.ctx.lineTo(point1.x, point1.y);
+      parent.brokenWalls.push(direction);
+      node.brokenWalls.push(invertedDirection);
+
+      this.ctx.moveTo(point0.x + 1, point0.y + 1);
+      this.ctx.lineTo(point1.x - 1, point1.y - 1);
       this.ctx.stroke();
     },
     getWallToBreak(node, parent) {
@@ -115,39 +126,46 @@ export default {
 
       let point0 = {};
       let point1 = {};
+      let direction = null;
 
       if (isNodeFurther) {
         point0 = {
-          x: node.x * this.nodeSize + 1,
-          y: node.y * this.nodeSize + 1
+          x: node.x * this.nodeSize,
+          y: node.y * this.nodeSize
         };
-        if (isWallHorizontal)
+        if (isWallHorizontal) {
+          direction = this.directions.DOWN;
           point1 = {
-            x: node.x * this.nodeSize + this.nodeSize - 1,
-            y: node.y * this.nodeSize - 1
+            x: node.x * this.nodeSize + this.nodeSize,
+            y: node.y * this.nodeSize
           };
-        else
+        } else {
+          direction = this.directions.RIGHT;
           point1 = {
-            x: node.x * this.nodeSize - 1,
-            y: node.y * this.nodeSize + this.nodeSize - 1
+            x: node.x * this.nodeSize,
+            y: node.y * this.nodeSize + this.nodeSize
           };
+        }
       } else {
         point0 = {
-          x: parent.x * this.nodeSize + 1,
-          y: parent.y * this.nodeSize + 1
+          x: parent.x * this.nodeSize,
+          y: parent.y * this.nodeSize
         };
-        if (isWallHorizontal)
+        if (isWallHorizontal) {
+          direction = this.directions.UP;
           point1 = {
-            x: parent.x * this.nodeSize + this.nodeSize - 1,
-            y: parent.y * this.nodeSize - 1
+            x: parent.x * this.nodeSize + this.nodeSize,
+            y: parent.y * this.nodeSize
           };
-        else
+        } else {
+          direction = this.directions.LEFT;
           point1 = {
             x: parent.x * this.nodeSize,
             y: parent.y * this.nodeSize + this.nodeSize
           };
+        }
       }
-      const wall = { point0, point1 };
+      const wall = { point0, point1, direction };
       return wall;
     },
     srand(node, visitedDirs) {
@@ -171,19 +189,34 @@ export default {
     initPlayer() {
       const color = this.getRandomColor();
       this.player = new Player(0, 0, this.nodeSize, color, this.ctx);
+      const self = this;
       window.addEventListener("keydown", e => {
-        let key = e.keyCode;
+        const key = e.keyCode;
+        const x = self.player.x;
+        const y = self.player.y;
+        const node = self.maze[y][x];
+        const brokenWalls = node.brokenWalls;
         if (key == 37) {
-          if (this.player.x !== 0) this.player.goLeft();
+          if (x !== 0 && brokenWalls.includes(self.directions.LEFT))
+            self.player.goLeft();
         }
         if (key == 39) {
-          if (this.player.x !== this.mazeSize - 1) this.player.goRight();
+          if (
+            x !== self.mazeSize - 1 &&
+            brokenWalls.includes(self.directions.RIGHT)
+          )
+            self.player.goRight();
         }
         if (key == 38) {
-          if (this.player.y !== 0) this.player.goUp();
+          if (y !== 0 && brokenWalls.includes(self.directions.UP))
+            self.player.goUp();
         }
         if (key == 40) {
-          if (this.player.y !== this.mazeSize - 1) this.player.goDown();
+          if (
+            y !== self.mazeSize - 1 &&
+            brokenWalls.includes(self.directions.DOWN)
+          )
+            self.player.goDown();
         }
       });
     },

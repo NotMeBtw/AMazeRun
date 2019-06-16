@@ -4,5 +4,6 @@ export default class Node {
         this.y = y;
         this.visited = visited;
         this.parent = null;
+        this.brokenWalls = [];
     }
 };
