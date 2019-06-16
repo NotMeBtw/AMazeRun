@@ -32,16 +32,21 @@ export default {
 
     this.nodeSize = 500 / this.mazeSize;
 
-    this.initNodes();
-    this.draw();
-    this.ctx.lineWidth = 2;
-    this.ctx.strokeStyle = "#fff";
-    this.ctx.beginPath();
-    this.ctx.lineWidth = 4;
-    this.dfs(0, 0);
-    this.initPlayer();
+    this.init();
+    window.addEventListener("keydown", e => {
+      const key = e.keyCode;
+      this.checkIfCorrectKeyAndMovePlayer(key).then(this.checkIfWon);
+    });
   },
   methods: {
+    init() {
+      this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+      this.initNodes();
+      this.draw();
+      this.dfs(0, 0);
+      this.initPlayer();
+    },
     initNodes() {
       this.maze = [];
       for (let y = 0; y < this.mazeSize; y++) {
@@ -52,6 +57,9 @@ export default {
       }
     },
     draw() {
+      this.ctx.strokeStyle = "#000";
+      this.ctx.lineWidth = 2;
+      this.ctx.beginPath();
       for (let i = 0; i <= this.mazeSize; i++) {
         this.ctx.moveTo(0, i * this.nodeSize);
         this.ctx.lineTo(500, i * this.nodeSize);
@@ -111,6 +119,9 @@ export default {
       parent.brokenWalls.push(direction);
       node.brokenWalls.push(invertedDirection);
 
+      this.ctx.strokeStyle = "#fff";
+      this.ctx.lineWidth = 4;
+      this.ctx.beginPath();
       this.ctx.moveTo(point0.x + 1, point0.y + 1);
       this.ctx.lineTo(point1.x - 1, point1.y - 1);
       this.ctx.stroke();
@@ -187,38 +198,10 @@ export default {
       return leftDirs[r];
     },
     initPlayer() {
+      if (this.player) this.player.clear();
+
       const color = this.getRandomColor();
       this.player = new Player(0, 0, this.nodeSize, color, this.ctx);
-      const self = this;
-      window.addEventListener("keydown", e => {
-        const key = e.keyCode;
-        const x = self.player.x;
-        const y = self.player.y;
-        const node = self.maze[y][x];
-        const brokenWalls = node.brokenWalls;
-        if (key == 37) {
-          if (x !== 0 && brokenWalls.includes(self.directions.LEFT))
-            self.player.goLeft();
-        }
-        if (key == 39) {
-          if (
-            x !== self.mazeSize - 1 &&
-            brokenWalls.includes(self.directions.RIGHT)
-          )
-            self.player.goRight();
-        }
-        if (key == 38) {
-          if (y !== 0 && brokenWalls.includes(self.directions.UP))
-            self.player.goUp();
-        }
-        if (key == 40) {
-          if (
-            y !== self.mazeSize - 1 &&
-            brokenWalls.includes(self.directions.DOWN)
-          )
-            self.player.goDown();
-        }
-      });
     },
     getRandomColor() {
       const letters = "0123456789ABCDEF";
@@ -227,6 +210,52 @@ export default {
         color += letters[Math.floor(Math.random() * 16)];
       }
       return color;
+    },
+    checkIfCorrectKeyAndMovePlayer(key) {
+      const self = this;
+      return new Promise((resolve, reject) => {
+        const x = self.player.x;
+        const y = self.player.y;
+        const node = self.maze[y][x];
+        const brokenWalls = node.brokenWalls;
+
+        if (key == 37) {
+          if (x !== 0 && brokenWalls.includes(self.directions.LEFT)) {
+            self.player.goLeft();
+            resolve();
+          }
+        } else if (key == 39) {
+          if (
+            x !== self.mazeSize - 1 &&
+            brokenWalls.includes(self.directions.RIGHT)
+          ) {
+            self.player.goRight();
+            resolve();
+          }
+        } else if (key == 38) {
+          if (y !== 0 && brokenWalls.includes(self.directions.UP)) {
+            self.player.goUp();
+            resolve();
+          }
+        } else if (key == 40) {
+          if (
+            y !== self.mazeSize - 1 &&
+            brokenWalls.includes(self.directions.DOWN)
+          ) {
+            self.player.goDown();
+            resolve();
+          }
+        } else reject("Invalid key");
+      });
+    },
+    checkIfWon() {
+      if (
+        this.player.x === this.mazeSize - 1 &&
+        this.player.y === this.mazeSize - 1
+      ) {
+        console.log("You won!");
+        setTimeout(this.init, 1000);
+      }
     }
   }
 };
