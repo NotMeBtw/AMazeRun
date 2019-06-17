@@ -2,6 +2,7 @@
   <div id="game">
     <section class="section">
       <div class="container has-text-centered">
+        <b-loading :is-full-page="true" :active.sync="isLoading" :can-cancel="true"></b-loading>
         <h1 class="title">Run through the maze</h1>
         <h2 class="subtitle">
           Use&nbsp;
@@ -40,7 +41,8 @@ export default {
         RIGHT: 0b0010,
         UP: 0b0100,
         DOWN: 0b1000
-      }
+      },
+      isLoading: true
     };
   },
   mounted() {
@@ -58,12 +60,14 @@ export default {
   },
   methods: {
     init() {
+      this.isLoading = true;
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
       this.initNodes();
       this.draw();
       this.dfs(0, 0);
       this.initPlayer();
+      this.isLoading = false;
     },
 
     initNodes() {
