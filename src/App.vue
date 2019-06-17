@@ -1,11 +1,48 @@
 <template>
   <div id="app">
     <div v-if="user">
+      <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
+        <div class="navbar-brand">
+          <div class="navbar-item">
+            <h1 class="title has-text-white">Maze</h1>
+          </div>
+          <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+            <span aria-hidden="true"></span>
+          </a>
+        </div>
+        <div class="navbar-menu">
+          <div class="navbar-end">
+            <div class="navbar-item">
+              <img class="img" :src="user.photoURL" alt="Avatar">
+            </div>
+            <div class="navbar-item">
+              <b>{{user.displayName}}</b>
+            </div>
+            <div class="navbar-item">
+              <button class="button" @click="signOut()">
+                <span class="icon">
+                  <i class="fas fa-sign-out-alt" aria-hidden="true"></i>
+                </span>
+                <span>Logout</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
       <Game :user="user"/>
-      <button @click="signOut()">Logout</button>
     </div>
     <div v-else>
-      <button @click="login()">Login</button>
+      <section class="hero is-primary is-fullheight has-text-centered">
+        <div class="hero-body">
+          <div class="container">
+            <h1 class="title">Maze</h1>
+            <h2 class="subtitle">Run through mazes</h2>
+            <button class="button" @click="login()">Login</button>
+          </div>
+        </div>
+      </section>
     </div>
   </div>
 </template>
@@ -34,9 +71,7 @@ export default {
 </script>
 
 <style lang="scss">
-#app {
-  font-family: "Avenir", Helvetica, Arial, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+.img {
+  border-radius: 100%;
 }
 </style>
