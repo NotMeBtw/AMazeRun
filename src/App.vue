@@ -16,8 +16,6 @@
           <div class="navbar-end">
             <div class="navbar-item">
               <img class="img" :src="user.photoURL" alt="Avatar">
-            </div>
-            <div class="navbar-item">
               <b>{{user.displayName}}</b>
             </div>
             <div class="navbar-item">
@@ -73,5 +71,6 @@ export default {
 <style lang="scss">
 .img {
   border-radius: 100%;
+  margin-right: 0.5rem;
 }
 </style>

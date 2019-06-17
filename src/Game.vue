@@ -1,12 +1,26 @@
 <template>
   <div id="game">
-    <canvas id="canvas" height="500" width="500"></canvas>
+    <section class="section">
+      <div class="container has-text-centered">
+        <h1 class="title">Run through the maze</h1>
+        <h2 class="subtitle">
+          Use&nbsp;
+          <i class="fas fa-arrow-left" aria-hidden="true"></i>,&nbsp;
+          <i class="fas fa-arrow-right" aria-hidden="true"></i>,&nbsp;
+          <i class="fas fa-arrow-up" aria-hidden="true"></i>,&nbsp;
+          <i class="fas fa-arrow-down" aria-hidden="true"></i>&nbsp;
+          <strong>arrow keys</strong> on your keyboard to move your character.
+        </h2>
+        <canvas id="canvas" height="504" width="504"></canvas>
+      </div>
+    </section>
   </div>
 </template>
 
 <script>
 import Node from "./models/node";
 import Player from "./models/player";
+import confetti from "canvas-confetti";
 
 export default {
   name: "game",
@@ -32,6 +46,7 @@ export default {
   mounted() {
     this.canvas = document.getElementById("canvas");
     this.ctx = this.canvas.getContext("2d");
+    this.ctx.translate(2, 2);
 
     this.nodeSize = 500 / this.mazeSize;
 
@@ -50,6 +65,7 @@ export default {
       this.dfs(0, 0);
       this.initPlayer();
     },
+
     initNodes() {
       this.maze = [];
       for (let y = 0; y < this.mazeSize; y++) {
@@ -59,23 +75,34 @@ export default {
         }
       }
     },
+
     draw() {
       this.ctx.strokeStyle = "#000";
       this.ctx.lineWidth = 2;
-      this.ctx.beginPath();
       for (let i = 0; i <= this.mazeSize; i++) {
+        this.ctx.beginPath();
         this.ctx.moveTo(0, i * this.nodeSize);
         this.ctx.lineTo(500, i * this.nodeSize);
         this.ctx.stroke();
 
+        this.ctx.beginPath();
         this.ctx.moveTo(i * this.nodeSize, 0);
         this.ctx.lineTo(i * this.nodeSize, 500);
         this.ctx.stroke();
       }
+      this.ctx.strokeStyle = "#fff";
+      this.ctx.beginPath();
+      this.ctx.moveTo(0, 0);
+      this.ctx.lineTo(0, this.nodeSize);
+      this.ctx.stroke();
+      this.ctx.beginPath();
+      this.ctx.moveTo(500, 500);
+      this.ctx.lineTo(500, 500 - this.nodeSize);
+      this.ctx.stroke();
     },
+
     dfs(x, y, parent) {
       const node = this.maze[y][x];
-      console.log(node);
 
       if (node.visited) return false;
       else {
@@ -89,7 +116,6 @@ export default {
       let visitedDirs = [];
       while (1) {
         let direction = this.srand(node, visitedDirs);
-        console.log(direction);
         if (!direction) break;
         if (direction == this.directions.LEFT) {
           this.dfs(x - 1, y, node);
@@ -107,6 +133,7 @@ export default {
       }
       return true;
     },
+
     breakWall(node) {
       const parent = node.parent;
       const { point0, point1, direction } = this.getWallToBreak(node, parent);
@@ -123,12 +150,13 @@ export default {
       node.brokenWalls.push(invertedDirection);
 
       this.ctx.strokeStyle = "#fff";
-      this.ctx.lineWidth = 4;
+      this.ctx.lineWidth = 5;
       this.ctx.beginPath();
       this.ctx.moveTo(point0.x + 1, point0.y + 1);
       this.ctx.lineTo(point1.x - 1, point1.y - 1);
       this.ctx.stroke();
     },
+
     getWallToBreak(node, parent) {
       const differentDimension = ["x", "y"].filter(
         dim => node[dim] !== parent[dim]
@@ -182,6 +210,7 @@ export default {
       const wall = { point0, point1, direction };
       return wall;
     },
+
     srand(node, visitedDirs) {
       const directionsArray = Object.values(this.directions);
       let leftDirs = directionsArray.filter(dir => !visitedDirs.includes(dir));
@@ -200,12 +229,14 @@ export default {
       const r = Math.floor(Math.random() * leftDirs.length);
       return leftDirs[r];
     },
+
     initPlayer() {
       if (this.player) this.player.clear();
 
       const color = this.getRandomColor();
       this.player = new Player(0, 0, this.nodeSize, color, this.ctx);
     },
+
     getRandomColor() {
       const letters = "0123456789ABCDEF";
       let color = "#";
@@ -214,6 +245,7 @@ export default {
       }
       return color;
     },
+
     checkIfCorrectKeyAndMovePlayer(key) {
       const self = this;
       return new Promise((resolve, reject) => {
@@ -251,13 +283,28 @@ export default {
         } else reject("Invalid key");
       });
     },
+
     checkIfWon() {
       if (
         this.player.x === this.mazeSize - 1 &&
         this.player.y === this.mazeSize - 1
       ) {
         console.log("You won!");
-        setTimeout(this.init, 1000);
+        requestAnimationFrame(() => {
+          confetti({
+            particleCount: 100,
+            angle: 60,
+            spread: 55,
+            origin: { x: 0 }
+          });
+          confetti({
+            particleCount: 100,
+            angle: 120,
+            spread: 55,
+            origin: { x: 1 }
+          });
+        });
+        setTimeout(this.init, 2000);
       }
     }
   }
@@ -265,7 +312,4 @@ export default {
 </script>
 
 <style lang="scss">
-#canvas {
-  border: 1px solid #000;
-}
 </style>
