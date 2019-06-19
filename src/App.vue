@@ -4,7 +4,7 @@
       <nav class="navbar is-primary" role="navigation" aria-label="main navigation">
         <div class="navbar-brand">
           <div class="navbar-item">
-            <h1 class="title has-text-white">Maze</h1>
+            <h1 class="title has-text-white">A-Maze Run</h1>
           </div>
           <a role="button" class="navbar-burger" aria-label="menu" aria-expanded="false">
             <span aria-hidden="true"></span>
@@ -35,9 +35,14 @@
       <section class="hero is-primary is-fullheight has-text-centered">
         <div class="hero-body">
           <div class="container">
-            <h1 class="title">Maze</h1>
-            <h2 class="subtitle">Run through mazes</h2>
-            <button class="button" @click="login()">Login</button>
+            <h1 class="title is-1">A-Maze Run</h1>
+            <h2 class="subtitle is-4">Run through mazes</h2>
+            <button class="button is-medium" @click="login()">
+              <span class="icon">
+                <i class="fas fa-sign-in-alt" aria-hidden="true"></i>
+              </span>
+              <span>Login</span>
+            </button>
           </div>
         </div>
       </section>

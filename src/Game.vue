@@ -12,6 +12,22 @@
           <i class="fas fa-arrow-down" aria-hidden="true"></i>&nbsp;
           <strong>arrow keys</strong> on your keyboard to move your character.
         </h2>
+        <section class="section">
+          <div class="columns">
+            <div class="column">
+              <h1 class="title">{{record}}</h1>
+              <h2 class="subtitle">Record size</h2>
+            </div>
+            <div class="column">
+              <h1 class="title">{{mazeSize}}</h1>
+              <h2 class="subtitle">Maze size</h2>
+            </div>
+            <div class="column">
+              <h1 class="title">{{moves}}</h1>
+              <h2 class="subtitle">Moves</h2>
+            </div>
+          </div>
+        </section>
         <canvas id="canvas" height="504" width="504"></canvas>
       </div>
     </section>
@@ -22,6 +38,7 @@
 import Node from "./models/node";
 import Player from "./models/player";
 import confetti from "canvas-confetti";
+import { db } from "./firebase";
 
 export default {
   name: "game",
@@ -32,7 +49,7 @@ export default {
     return {
       canvas: null,
       ctx: null,
-      mazeSize: 10,
+      mazeSize: 3,
       nodeSize: null,
       maze: null,
       player: null,
@@ -42,8 +59,24 @@ export default {
         UP: 0b0100,
         DOWN: 0b1000
       },
-      isLoading: true
+      isLoading: true,
+      canMove: false,
+      moves: 0,
+      iteration: 0,
+      record: 0
     };
+  },
+  created() {
+    db.collection("mazes")
+      .where("userId", "==", this.user.uid)
+      .orderBy("size", "desc")
+      .limit(1)
+      .onSnapshot(querySnapshot => {
+        querySnapshot.forEach(doc => {
+          const maze = doc.data();
+          this.record = maze.size;
+        });
+      });
   },
   mounted() {
     this.canvas = document.getElementById("canvas");
@@ -53,19 +86,22 @@ export default {
     this.nodeSize = 500 / this.mazeSize;
 
     this.init();
-    window.addEventListener("keydown", e => {
-      const key = e.keyCode;
-      this.checkIfCorrectKeyAndMovePlayer(key).then(this.checkIfWon);
-    });
+    window.addEventListener("keydown", this.checkIfCorrectKeyAndMovePlayer);
   },
   methods: {
     init() {
       this.isLoading = true;
       this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
 
+      if (this.iteration++ === this.mazeSize && this.mazeSize != 20) {
+        this.mazeSize++;
+        this.iteration = 1;
+        this.nodeSize = 500 / this.mazeSize;
+      }
+
       this.initNodes();
       this.draw();
-      this.dfs(0, 0);
+      this.dfs(0, 0, null);
       this.initPlayer();
       this.isLoading = false;
     },
@@ -235,10 +271,12 @@ export default {
     },
 
     initPlayer() {
-      if (this.player) this.player.clear();
+      // if (this.player) this.player.clear();
 
       const color = this.getRandomColor();
       this.player = new Player(0, 0, this.nodeSize, color, this.ctx);
+      this.canMove = true;
+      this.moves = 0;
     },
 
     getRandomColor() {
@@ -250,66 +288,91 @@ export default {
       return color;
     },
 
-    checkIfCorrectKeyAndMovePlayer(key) {
-      const self = this;
-      return new Promise((resolve, reject) => {
-        const x = self.player.x;
-        const y = self.player.y;
-        const node = self.maze[y][x];
-        const brokenWalls = node.brokenWalls;
+    checkIfCorrectKeyAndMovePlayer(event) {
+      if (!this.canMove) return;
 
-        if (key == 37) {
-          if (x !== 0 && brokenWalls.includes(self.directions.LEFT)) {
-            self.player.goLeft();
-            resolve();
-          }
-        } else if (key == 39) {
-          if (
-            x !== self.mazeSize - 1 &&
-            brokenWalls.includes(self.directions.RIGHT)
-          ) {
-            self.player.goRight();
-            resolve();
-          }
-        } else if (key == 38) {
-          if (y !== 0 && brokenWalls.includes(self.directions.UP)) {
-            self.player.goUp();
-            resolve();
-          }
-        } else if (key == 40) {
-          if (
-            y !== self.mazeSize - 1 &&
-            brokenWalls.includes(self.directions.DOWN)
-          ) {
-            self.player.goDown();
-            resolve();
-          }
-        } else reject("Invalid key");
-      });
+      const validKeys = [37, 38, 39, 40];
+      const key = event.keyCode;
+      if (!validKeys.includes(key)) return;
+
+      const x = this.player.x;
+      const y = this.player.y;
+      const node = this.maze[y][x];
+      const brokenWalls = node.brokenWalls;
+
+      if (key === 37) {
+        if (x !== 0 && brokenWalls.includes(this.directions.LEFT)) {
+          this.player.goLeft();
+          this.moves++;
+          this.checkIfWon();
+        }
+      }
+      if (key === 39) {
+        if (
+          x !== this.mazeSize - 1 &&
+          brokenWalls.includes(this.directions.RIGHT)
+        ) {
+          this.player.goRight();
+          this.moves++;
+          this.checkIfWon();
+        }
+      }
+      if (key === 38) {
+        if (y !== 0 && brokenWalls.includes(this.directions.UP)) {
+          this.player.goUp();
+          this.moves++;
+          this.checkIfWon();
+        }
+      }
+      if (key === 40) {
+        if (
+          y !== this.mazeSize - 1 &&
+          brokenWalls.includes(this.directions.DOWN)
+        ) {
+          this.player.goDown();
+          this.moves++;
+          this.checkIfWon();
+        }
+      }
     },
 
     checkIfWon() {
       if (
-        this.player.x === this.mazeSize - 1 &&
-        this.player.y === this.mazeSize - 1
-      ) {
-        console.log("You won!");
-        requestAnimationFrame(() => {
-          confetti({
-            particleCount: 100,
-            angle: 60,
-            spread: 55,
-            origin: { x: 0 }
-          });
-          confetti({
-            particleCount: 100,
-            angle: 120,
-            spread: 55,
-            origin: { x: 1 }
-          });
+        this.player.x !== this.mazeSize - 1 ||
+        this.player.y !== this.mazeSize - 1
+      )
+        return;
+
+      console.log("You won!");
+      this.canMove = false;
+      requestAnimationFrame(() => {
+        confetti({
+          particleCount: 100,
+          angle: 60,
+          spread: 55,
+          origin: { x: 0 }
         });
-        setTimeout(this.init, 2000);
-      }
+        confetti({
+          particleCount: 100,
+          angle: 120,
+          spread: 55,
+          origin: { x: 1 }
+        });
+      });
+
+      db.collection("mazes")
+        .add({
+          userId: this.user.uid,
+          moves: this.moves,
+          size: this.mazeSize,
+          datetime: new Date()
+        })
+        .then(docRef => {
+          setTimeout(this.init, 2000);
+        })
+        .catch(error => {
+          console.error("Error adding document: ", error);
+        });
     }
   }
 };
