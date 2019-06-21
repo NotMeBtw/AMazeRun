@@ -15,8 +15,12 @@
         <section class="section">
           <div class="columns">
             <div class="column">
+              <h1 class="title">{{otherBetterPlayers.length || 0}}</h1>
+              <h2 class="subtitle">{{otherBetterPlayersString}}</h2>
+            </div>
+            <div class="column">
               <h1 class="title">{{record}}</h1>
-              <h2 class="subtitle">Record size</h2>
+              <h2 class="subtitle">Your record size</h2>
             </div>
             <div class="column">
               <h1 class="title">{{mazeSize}}</h1>
@@ -63,11 +67,23 @@ export default {
       canMove: false,
       moves: 0,
       iteration: 0,
-      record: 0
+      record: 0,
+      otherBetterPlayers: []
     };
   },
+  computed: {
+    otherBetterPlayersString() {
+      return this.otherBetterPlayers
+        ? this.otherBetterPlayers.length !== 1
+          ? "Players who have higher score"
+          : "Player who has higher score"
+        : "";
+    }
+  },
   created() {
-    db.collection("mazes")
+    const mazesRef = db.collection("mazes");
+
+    mazesRef
       .where("userId", "==", this.user.uid)
       .orderBy("size", "desc")
       .limit(1)
@@ -77,6 +93,24 @@ export default {
           this.record = maze.size;
         });
       });
+
+    mazesRef.orderBy("size", "desc").onSnapshot(querySnapshot => {
+      this.otherBetterPlayers = [];
+      querySnapshot.forEach(doc => {
+        const maze = doc.data();
+        if (maze.userId === this.user.uid) return;
+        if (maze.size <= this.record) return;
+
+        let player = this.otherBetterPlayers.find(
+          player => player.id === maze.userId
+        );
+        if (!player)
+          this.otherBetterPlayers.push({
+            id: maze.userId,
+            record: maze.size
+          });
+      });
+    });
   },
   mounted() {
     this.canvas = document.getElementById("canvas");
